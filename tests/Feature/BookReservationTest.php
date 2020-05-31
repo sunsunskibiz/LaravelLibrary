@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Author;
 use App\Book;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,10 +17,7 @@ class BookReservationTest extends TestCase
      */
     public function testABookCanBeAddedToTheLibrary()
     {
-        $response = $this->post('/books', [
-            'title' => 'Cool Book Title',
-            'author' => 'Sun',
-        ]);
+        $response = $this->post('/books', $this->setUpData());
 
         $this->assertCount(1,Book::all());
         $response->assertRedirect('/books/'.Book::first()->id);
@@ -27,49 +25,39 @@ class BookReservationTest extends TestCase
 
     public function testTitleIsRequired()
     {
-        $response = $this->post('/books', [
-            'title' => '',
-            'author' => 'Sun',
-        ]);
+        $response = $this->post('/books', array_merge($this->setUpData(), ['title' => '']));
 
         $response->assertSessionHasErrors('title');
     }
 
     public function testAuthorIsRequired()
     {
-        $response = $this->post('/books', [
-            'title' => 'Cool Book Title',
-            'author' => '',
-        ]);
+        $response = $this->post('/books', array_merge($this->setUpData(), ['author_id' => '']));
 
-        $response->assertSessionHasErrors('author');
+        $response->assertSessionHasErrors('author_id');
     }
 
     public function testBookCanBeUpdated()
     {
-        $this->post('/books', [
-            'title' => 'Cool Book Title',
-            'author' => 'Sun',
-        ]);
+        $this->withoutExceptionHandling();
+
+        $this->post('/books', $this->setUpData());
 
         $book = Book::first();
 
         $response = $this->patch('/books/' . $book->id, [
             'title' => 'New title',
-            'author' => 'New author'
+            'author_id' => 'New author'
         ]);
 
         $this->assertEquals('New title', Book::first()->title);
-        $this->assertEquals('New author', Book::first()->author);
+        $this->assertEquals(2, Book::first()->author_id);
         $response->assertRedirect($book->fresh()->path());
     }
 
     public function testBookCanBeDeleted()
     {
-        $this->post('/books', [
-            'title' => 'Cool Book Title',
-            'author' => 'Sun',
-        ]);
+        $this->post('/books', $this->setUpData());
 
         $book = Book::first();
         $this->assertCount(1, Book::all());
@@ -78,5 +66,24 @@ class BookReservationTest extends TestCase
         $this->assertCount(0, Book::all());
 
         $response->assertRedirect('/books');
+    }
+
+    public function testNewAuthorIsAutomatically_added()
+    {
+        $this->post('/books', $this->setUpData());
+
+        $book = Book::first();
+        $author = Author::first();
+
+        $this->assertCount(1, Author::all());
+        $this->assertEquals($author->id, $book->author_id);
+    }
+
+    protected function setUpData()
+    {
+        return [
+            'title'  => 'Cool Book Title',
+            'author_id' => 'Sun',
+        ];
     }
 }
