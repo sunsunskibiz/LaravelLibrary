@@ -16,10 +16,23 @@ class Book extends Model
         return '/books/'. $this->id;
     }
 
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
     public function setAuthorIdAttribute($author)
     {
         $this->attributes['author_id'] = Author::firstOrCreate([
             'name' => $author
         ])->id;
+    }
+
+    public function checkOut($user)
+    {
+        $this->reservations()->create([
+            'user_id' => $user->id,
+            'checked_out_at' => now()
+        ]);
     }
 }
