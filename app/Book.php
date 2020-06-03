@@ -35,4 +35,13 @@ class Book extends Model
             'checked_out_at' => now()
         ]);
     }
+
+    public function checkIn($user)
+    {
+        $this->reservations()->where('user_id', $user->id)
+            ->whereNull('checked_in_at')
+            ->whereNotNull('checked_out_at')
+            ->firstOrFail()
+            ->update(['checked_in_at' => now()]);
+    }
 }
